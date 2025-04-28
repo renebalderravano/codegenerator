@@ -116,6 +116,9 @@ public class ScriptRunner {
                         || trimmedLine.startsWith("//")) {
                     // Do nothing
                 } else if (trimmedLine.length() < 1
+                        || trimmedLine.startsWith("/**")) {
+                    // Do nothing
+                } else if (trimmedLine.length() < 1
                         || trimmedLine.startsWith("--")) {
                     // Do nothing
                 } else if (!fullLineDelimiter

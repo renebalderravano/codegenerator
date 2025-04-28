@@ -9,6 +9,7 @@ import javax.swing.JCheckBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -52,7 +53,7 @@ public class DataBaseFrame extends JFrame {
 	private void initialize() {
 		
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 432, 506);
+		setBounds(450, 150, 432, 506);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 
@@ -113,7 +114,7 @@ public class DataBaseFrame extends JFrame {
 		contentPane.add(chkBackEnd);
 		
 		JCheckBox chkAddSecurity = new JCheckBox("Agregar Spring Security Oauth");
-		chkAddSecurity.setSelected(true);
+		chkAddSecurity.setSelected(false);
 		chkAddSecurity.setBounds(23, 169, 212, 23);
 		contentPane.add(chkAddSecurity);
 		
@@ -157,7 +158,10 @@ public class DataBaseFrame extends JFrame {
 																		txtProjectName.getText(), 
 																		txtPaquetePrincipal.getText(), 
 																		chkAddSecurity.isSelected());				
-				backEndGenerator.generar();
+				boolean isGenerated = backEndGenerator.generar();
+				
+				JOptionPane.showMessageDialog(null, isGenerated ? "Proyecto Generado Exitosamente": "Error al generar el proyecto");
+				
 				System.out.println("Proyecto generado!!!");
 			}
 		});

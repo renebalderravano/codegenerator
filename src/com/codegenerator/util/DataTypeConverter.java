@@ -26,7 +26,6 @@ public class DataTypeConverter {
 		put("mediumtext", "String");
 		put("longtext", "String");
 		put("json", "String");
-		
 		put("binary", "byte[]");
 		put("varbinary", "byte[]");
 		put("blob", "byte[]");

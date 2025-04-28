@@ -10,48 +10,82 @@ import java.util.List;
 
 import com.codegenerator.util.Column;
 import com.codegenerator.util.PropertiesReading;
+import com.codegenerator.util.Result;
 
 public class JDBCManager {
 
-	String host = "";
-	String port = "";
-	String username = ""; // MySQL credentials
-	String password = "";
-	String server = "";
+	private String host = "";
+	private String port = "";
+	private String username = ""; // MySQL credentials
+	private String password = "";
+	private String server = "";
 	private Connection con;
 
 	public JDBCManager(String server, String host, String port, String username, String password) {
-		this.host = host;
-		this.port = port;
-		this.username = username;
-		this.password = password;
-		this.server = server;
+		this.setHost(host);
+		this.setPort(port);
+		this.setUsername(username);
+		this.setPassword(password);
+		this.setServer(server);
 
 	}
 
-	public boolean connect() {
+	public Result<?> connect() {
+		Result<?> result = new Result<>();
+		
 		String url = "jdbc:"; // table details
 
 		try {
-			String prop = server.trim() + ".datasource.driver-class-name";
+			String prop = getServer().trim() + ".datasource.driver-class-name";
 
 			String driver = PropertiesReading.getProperty(prop);
-			StringBuilder urlDB = new StringBuilder(PropertiesReading.getProperty(server + ".datasource.url"));
+			StringBuilder urlDB = new StringBuilder(PropertiesReading.getProperty(getServer() + ".datasource.url"));
 
-			url = urlDB.toString().replace("?1", host).replace("?2", port);
+			url = urlDB.toString().replace("?1", getHost()).replace("?2", getPort());
 
 			Class.forName(driver);
 			// Driver name
-			setConnection(DriverManager.getConnection(url, username, password));
+			setConnection(DriverManager.getConnection(url, getUsername(), getPassword()));
 
-			System.out.println("Connection successfull !!!!");
-			return true;
+			result.setSuccess(true);
+			result.setMessage("Connection successfull !!!!");			
+			System.out.println("Connection successfull !!!!");			
+			return result;
 
 		} catch (ClassNotFoundException | SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			result.setSuccess(false);
+			result.setMessage(e.getMessage());
 		}
-		return false;
+		return result;
+	}
+	
+	public Result<?> connect(String database) {
+		Result<?> result = new Result<>();
+		
+		String url = "jdbc:";
+
+		try {
+			String prop = getServer().trim() + ".datasource.driver-class-name";
+
+			String driver = PropertiesReading.getProperty(prop);
+			StringBuilder urlDB = new StringBuilder(PropertiesReading.getProperty(getServer() + ".datasource.url.databasename"));
+
+			url = urlDB.toString().replace("?1", getHost()).replace("?2", getPort()).replace("?3", database);
+
+			Class.forName(driver);
+			// Driver name
+			setConnection(DriverManager.getConnection(url, getUsername(), getPassword()));
+
+			result.setSuccess(true);
+			result.setMessage("Connection successfull to DB: "+database+" !!!!");			
+			System.out.println("Connection successfull to DB: "+database+" !!!!");			
+			return result;
+
+		} catch (ClassNotFoundException | SQLException e) {
+			result.setSuccess(false);
+			result.setMessage(e.getMessage());
+		}
+		return result;
 	}
 
 	public List<String> getDataBases() {
@@ -62,7 +96,7 @@ public class JDBCManager {
 			st = getConnection().createStatement();
 			ResultSet rs = null;
 
-			String query = PropertiesReading.getProperty(server + ".query.database");
+			String query = PropertiesReading.getProperty(getServer() + ".query.database");
 
 			rs = st.executeQuery(query);
 
@@ -84,8 +118,8 @@ public class JDBCManager {
 		Statement st;
 		try {
 
-			String query = PropertiesReading.getProperty(server + ".query.tables");
-			
+			String query = PropertiesReading.getProperty(getServer() + ".query.tables");
+
 			query = query.replace("?1", database);
 //			if (server.equals("MySQL")) {
 //				query = "SELECT * FROM information_schema.tables " + "WHERE table_schema = '" + database + "'";
@@ -113,8 +147,8 @@ public class JDBCManager {
 		List<Column> columns = new ArrayList<Column>();
 		Statement st;
 		try {
-			String query = PropertiesReading.getProperty(server + ".query.columns");
-			
+			String query = PropertiesReading.getProperty(getServer() + ".query.columns");
+
 			query = query.replace("?1", database);
 			query = query.replace("?2", tableName);
 			st = getConnection().createStatement();
@@ -124,8 +158,10 @@ public class JDBCManager {
 				column.setName(rs.getString("column_name"));
 				column.setDataType(rs.getString("data_type"));
 				column.setIsNullable(rs.getString("is_nullable").equals("YES"));
-				column.setIsPrimaryKey(rs.getString("column_key").equals("PRI"));
-				column.setIsForeignKey(rs.getString("column_key").equals("MUL"));
+				if (rs.getString("column_key") != null) {
+					column.setIsPrimaryKey(rs.getString("column_key").equals("PRI"));
+					column.setIsForeignKey(rs.getString("column_key").equals("MUL"));
+				}
 				columns.add(column);
 			}
 
@@ -149,6 +185,76 @@ public class JDBCManager {
 	 */
 	public void setConnection(Connection con) {
 		this.con = con;
+	}
+
+	/**
+	 * @return the host
+	 */
+	public String getHost() {
+		return host;
+	}
+
+	/**
+	 * @param host the host to set
+	 */
+	public void setHost(String host) {
+		this.host = host;
+	}
+
+	/**
+	 * @return the port
+	 */
+	public String getPort() {
+		return port;
+	}
+
+	/**
+	 * @param port the port to set
+	 */
+	public void setPort(String port) {
+		this.port = port;
+	}
+
+	/**
+	 * @return the username
+	 */
+	public String getUsername() {
+		return username;
+	}
+
+	/**
+	 * @param username the username to set
+	 */
+	public void setUsername(String username) {
+		this.username = username;
+	}
+
+	/**
+	 * @return the password
+	 */
+	public String getPassword() {
+		return password;
+	}
+
+	/**
+	 * @param password the password to set
+	 */
+	public void setPassword(String password) {
+		this.password = password;
+	}
+
+	/**
+	 * @return the server
+	 */
+	public String getServer() {
+		return server;
+	}
+
+	/**
+	 * @param server the server to set
+	 */
+	public void setServer(String server) {
+		this.server = server;
 	}
 
 }

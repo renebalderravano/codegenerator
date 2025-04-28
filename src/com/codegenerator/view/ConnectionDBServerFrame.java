@@ -3,6 +3,7 @@ package com.codegenerator.view;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
@@ -12,6 +13,7 @@ import javax.swing.border.EmptyBorder;
 import com.codegenerator.connection.JDBCManager;
 import com.codegenerator.util.ComboItem;
 import com.codegenerator.util.PropertiesReading;
+import com.codegenerator.util.Result;
 
 import javax.swing.DefaultCellEditor;
 import javax.swing.DefaultComboBoxModel;
@@ -55,9 +57,9 @@ public class ConnectionDBServerFrame extends JFrame {
 	}
 
 	private void initialize() {
-		
+
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 432, 506);
+		setBounds(450, 150, 432, 506);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 
@@ -68,23 +70,31 @@ public class ConnectionDBServerFrame extends JFrame {
 		lblDBServer.setBounds(26, 11, 155, 22);
 		contentPane.add(lblDBServer);
 
-		JComboBox<ComboItem> cbDBServer = new JComboBox<ComboItem>();	
-//		cbDBServer.addItem(new ComboItem("Seleccione...", ""));
-		cbDBServer.addItem(new ComboItem( "MySQL", "mysql"));
-		cbDBServer.addItem(new ComboItem( "MSSQL server", "sqlserver"));
-		
+		JComboBox<ComboItem> cbDBServer = new JComboBox<ComboItem>();
+		cbDBServer.addItem(new ComboItem("Seleccione...", "none"));
+		cbDBServer.addItem(new ComboItem("MySQL", "mysql"));
+		cbDBServer.addItem(new ComboItem("MSSQL server", "sqlserver"));
+
 		cbDBServer.addItemListener(new ItemListener() {
 			public void itemStateChanged(ItemEvent e) {
-				if (e.getStateChange() == ItemEvent.SELECTED) {					
-					ComboItem i = (ComboItem)e.getItem();					
-					txtHost.setText(PropertiesReading.getProperty(i.getValue() + ".datasource.host")); 
-					txtPort.setText(PropertiesReading.getProperty(i.getValue() + ".datasource.port")); 
-					txtUsername.setText(PropertiesReading.getProperty(i.getValue() + ".datasource.username")); 
-					txtPassword.setText(PropertiesReading.getProperty(i.getValue() + ".datasource.password")); 					
-				}					
+				if (e.getStateChange() == ItemEvent.SELECTED) {
+					ComboItem i = (ComboItem) e.getItem();
+					txtHost.setText(PropertiesReading.getProperty(i.getValue() + ".datasource.host"));
+					txtPort.setText(PropertiesReading.getProperty(i.getValue() + ".datasource.port"));
+					txtUsername.setText(PropertiesReading.getProperty(i.getValue() + ".datasource.username"));
+					txtPassword.setText(PropertiesReading.getProperty(i.getValue() + ".datasource.password"));
+					
+					List<String> dbs = new ArrayList<>();
+					dbs.add("Seleccione...");
+					String[] array = new String[dbs.size()];
+					dbs.toArray(array); // fill the array
+					cbDatabase.setModel(new DefaultComboBoxModel(array));
+					
+					createTable(new ArrayList<>(), new String[] { "Tabla", "Generar" });
+				}
 			}
-		});		
-		
+		});
+
 		cbDBServer.setBounds(130, 11, 130, 22);
 		contentPane.add(cbDBServer);
 
@@ -93,57 +103,61 @@ public class ConnectionDBServerFrame extends JFrame {
 		contentPane.add(lblHost);
 
 		txtHost = new JTextField();
-		txtHost.setText("localhost");
+		// txtHost.setText("localhost");
 		txtHost.setBounds(130, 60, 130, 20);
 		txtHost.setColumns(10);
-		contentPane.add(txtHost);		
+		contentPane.add(txtHost);
 
 		JLabel lblPort = new JLabel("Port: ");
 		lblPort.setBounds(270, 63, 46, 14);
 		contentPane.add(lblPort);
 
 		txtPort = new JTextField();
-		txtPort.setText("3306");
+		// txtPort.setText("3306");
 		txtPort.setBounds(310, 60, 86, 20);
 		txtPort.setColumns(10);
 		contentPane.add(txtPort);
-		
 
 		JLabel lblUsername = new JLabel("Usuario:");
 		lblUsername.setBounds(26, 99, 74, 14);
 		contentPane.add(lblUsername);
 
 		txtUsername = new JTextField();
-		txtUsername.setText("root");
+		// txtUsername.setText("root");
 		txtUsername.setBounds(130, 96, 130, 20);
 		txtUsername.setColumns(10);
-		contentPane.add(txtUsername);		
+		contentPane.add(txtUsername);
 
 		JLabel lblPassword = new JLabel("Password: ");
 		lblPassword.setBounds(26, 135, 74, 14);
 		contentPane.add(lblPassword);
 
 		txtPassword = new JPasswordField();
-		txtPassword.setText("root");
+		// txtPassword.setText("root");
 		txtPassword.setBounds(130, 132, 130, 20);
 		txtPassword.setColumns(10);
-		contentPane.add(txtPassword);	
+		contentPane.add(txtPassword);
 
 		JLabel lblCatalog = new JLabel("Base de datos:");
 		lblCatalog.setBounds(26, 179, 100, 14);
 		contentPane.add(lblCatalog);
 
-		JButton btnNext = new JButton("Siguiente");		
+		JButton btnNext = new JButton("Siguiente");
 		btnNext.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				// ir al siguiente panel donde se mostrara la lista de las bases de datos
 				// existentes en el server
-				String serverDB = ((ComboItem)cbDBServer.getSelectedItem()).getValue();
-				String database = cbDatabase.getSelectedItem().toString();
-				DataBaseFrame frm = new DataBaseFrame( serverDB, database, c, tableSelected);
-				frm.setVisible(true);
-
-				dispose();
+				String serverDB = ((ComboItem) cbDBServer.getSelectedItem()).getValue();
+				if (serverDB.equals("none")) {
+					JOptionPane.showMessageDialog(null, "Seleccione un servidor de base de datos.");
+					return;
+				}
+				else {
+					String database = cbDatabase.getSelectedItem().toString();
+					DataBaseFrame frm = new DataBaseFrame(serverDB, database, c, tableSelected);
+					frm.setVisible(true);
+					dispose();
+				}
 			}
 		});
 		btnNext.setBounds(309, 418, 89, 23);
@@ -152,16 +166,48 @@ public class ConnectionDBServerFrame extends JFrame {
 		JButton btnTestConnection = new JButton("Conectar");
 		btnTestConnection.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				c = new JDBCManager(((ComboItem)cbDBServer.getSelectedItem()).getValue(), txtHost.getText(), txtPort.getText(), txtUsername.getText(), txtPassword.getText());
-				c.connect();
-				List<String> dbs = new ArrayList<>();
-				dbs.add("Seleccione...");
-				dbs.addAll(c.getDataBases());				
-				String[] array = new String[dbs.size()];
-				dbs.toArray(array); // fill the array
-				cbDatabase.setModel(new DefaultComboBoxModel(array));
+
+				String serverDB = ((ComboItem) cbDBServer.getSelectedItem()).getValue();
+				if (serverDB.equals("none")) {
+					JOptionPane.showMessageDialog(null, "Seleccione un servidor de base de datos.");
+					return;
+				}
+				String host = txtHost.getText();
+				if (host == null || host.equals("")) {
+					JOptionPane.showMessageDialog(null, "Ingrese el host al cual desea conectarse.");
+					return;
+				}
+				String port = txtPort.getText();
+				if (port == null || port.equals("")) {
+					JOptionPane.showMessageDialog(null, "Ingrese el puerto.");
+					return;
+				}
+				String username = txtUsername.getText();
+				if (username == null || username.equals("")) {
+					JOptionPane.showMessageDialog(null, "Ingrese el nombre de usuario.");
+					return;
+				}
+				String password = txtPassword.getText();
+				if (password == null || password.equals("")) {
+					JOptionPane.showMessageDialog(null, "Ingrese el password.");
+					return;
+				}
+
+				c = new JDBCManager(serverDB, host, port, username, password);
+
+				Result r = c.connect();				
+				if (r.isSuccess()) {					
+					List<String> dbs = new ArrayList<>();
+					dbs.add("Seleccione...");
+					dbs.addAll(c.getDataBases());
+					String[] array = new String[dbs.size()];
+					dbs.toArray(array); // fill the array
+					cbDatabase.setModel(new DefaultComboBoxModel(array));					
+				}
+				else {
+					JOptionPane.showMessageDialog(null, r.getMessage());
+				}
 			}
-			
 		});
 		btnTestConnection.setBounds(310, 131, 86, 20);
 		contentPane.add(btnTestConnection);
@@ -183,61 +229,65 @@ public class ConnectionDBServerFrame extends JFrame {
 
 					List<String> tables = c.getTableFromDataBase(e.getItem().toString());
 
-					Object[][] data = new Object[tables.size()][];
-					
-					int i = 0;
-					for (String t : tables) {
-						Object[] row = new Object[2];
-						row[0] = t;
-						row[1] = false;
-						data[i] = row;
-						i++;
-					}
-
-					final Class[] columnClass = new Class[] { String.class, Boolean.class };
-					// create table model with data
-					DefaultTableModel model = new DefaultTableModel(data, columns) {
-						@Override
-						public boolean isCellEditable(int row, int column) {
-							return true;
-						}
-
-						@Override
-						public Class<?> getColumnClass(int columnIndex) {
-							return columnClass[columnIndex];
-						}
-					};
-
-					tblTables.setModel(model);
-
-					TableColumnModel columnModel = tblTables.getColumnModel();
-					TableColumn column = columnModel.getColumn(1);
-					column.setCellEditor(tblTables.getDefaultEditor(Boolean.class));
-					column.setCellRenderer(tblTables.getDefaultRenderer(Boolean.class));
-					JCheckBox checkBox = new JCheckBox();
-					checkBox.addItemListener(new ItemListener() {
-						public void itemStateChanged(ItemEvent e) {
-							
-							int row = tblTables.getSelectedRow();
-							int column = tblTables.getSelectedColumn();
-							System.out.println("***********************************************");
-							System.out.println("Fila: " + row + " Columna: " + column);
-							System.out.println("Estado: " + e.getStateChange());
-							System.out.println("***********************************************");
-
-							if (e.getStateChange() == ItemEvent.SELECTED) {
-								data[row][column] = true;
-								tableSelected.add(data[row]);
-							}
-						}
-					});
-					column.setCellEditor(new DefaultCellEditor(checkBox));
+					createTable(tables, columns);
 
 				}
 			}
 		});
 		cbDatabase.setBounds(130, 175, 130, 22);
 		contentPane.add(cbDatabase);
-
+		
+		
+		
 	}
+	
+	public void createTable(List<String> rows, String[] columns) {
+		
+		Object[][] data = new Object[rows.size()][];
+
+		int i = 0;
+		for (String t : rows) {
+			Object[] row = new Object[2];
+			row[0] = t;
+			row[1] = false;
+			data[i] = row;
+			i++;
+		}
+
+		final Class[] columnClass = new Class[] { String.class, Boolean.class };
+		// create table model with data
+		DefaultTableModel model = new DefaultTableModel(data, columns) {
+			@Override
+			public boolean isCellEditable(int row, int column) {
+				return true;
+			}
+
+			@Override
+			public Class<?> getColumnClass(int columnIndex) {
+				return columnClass[columnIndex];
+			}
+		};
+
+		tblTables.setModel(model);
+
+		TableColumnModel columnModel = tblTables.getColumnModel();
+		TableColumn column = columnModel.getColumn(1);
+		column.setCellEditor(tblTables.getDefaultEditor(Boolean.class));
+		column.setCellRenderer(tblTables.getDefaultRenderer(Boolean.class));
+		JCheckBox checkBox = new JCheckBox();
+		checkBox.addItemListener(new ItemListener() {
+			public void itemStateChanged(ItemEvent e) {
+
+				int row = tblTables.getSelectedRow();
+				int column = tblTables.getSelectedColumn();
+
+				if (e.getStateChange() == ItemEvent.SELECTED) {
+					data[row][column] = true;
+					tableSelected.add(data[row]);
+				}
+			}
+		});
+		column.setCellEditor(new DefaultCellEditor(checkBox));
+	}
+	
 }
