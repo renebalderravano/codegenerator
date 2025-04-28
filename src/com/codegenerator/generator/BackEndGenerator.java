@@ -220,8 +220,7 @@ public class BackEndGenerator {
 		return text;
 	}
 	
-	private String convertTextToCamelCase(String text) {
-		
+	private String convertTextToCamelCase(String text) {		
 		String[] data = text.split("_");
 		if(data.length > 1) {
 			String aux = data[0].toLowerCase();
