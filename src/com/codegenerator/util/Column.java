@@ -9,6 +9,7 @@ public class Column {
 	private boolean isPrimaryKey;
 	private boolean isForeigKey;
 	private boolean autoIncrement;
+	private String tableReference;
 	
 	
 	public Column() {
@@ -55,6 +56,14 @@ public class Column {
 	}
 	public void setAutoIncrement(boolean autoIncrement) {
 		this.autoIncrement = autoIncrement;
+	}
+
+	public String getTableReference() {
+		return tableReference;
+	}
+
+	public void setTableReference(String tableReference) {
+		this.tableReference = tableReference;
 	}
 	
 	

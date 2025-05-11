@@ -147,6 +147,20 @@ public class DataBaseFrame extends JFrame {
 		jsbTable.setBounds(23, 239, 372, 158);
 		contentPane.add(jsbTable);
 		
+		JButton btnRegresar = new JButton("Regresar");
+		btnRegresar.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				ConnectionDBServerFrame frame = new ConnectionDBServerFrame();
+				frame.setVisible(true);
+				dispose();
+			}
+		});
+		btnRegresar.setBounds(210, 414, 89, 23);
+		contentPane.add(btnRegresar);
+		
+		
 		JButton btnGenerar = new JButton("Generar");
 		btnGenerar.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {				

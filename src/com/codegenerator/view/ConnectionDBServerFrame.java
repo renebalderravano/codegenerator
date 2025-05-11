@@ -85,7 +85,7 @@ public class ConnectionDBServerFrame extends JFrame {
 					txtPassword.setText(PropertiesReading.getProperty(i.getValue() + ".datasource.password"));
 					
 					List<String> dbs = new ArrayList<>();
-					dbs.add("Seleccione...");
+					dbs.add("Conectese al servidor de db.");
 					String[] array = new String[dbs.size()];
 					dbs.toArray(array); // fill the array
 					cbDatabase.setModel(new DefaultComboBoxModel(array));
@@ -234,7 +234,7 @@ public class ConnectionDBServerFrame extends JFrame {
 				}
 			}
 		});
-		cbDatabase.setBounds(130, 175, 130, 22);
+		cbDatabase.setBounds(130, 175, 200, 22);
 		contentPane.add(cbDatabase);
 		
 		

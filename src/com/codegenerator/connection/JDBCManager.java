@@ -148,11 +148,10 @@ public class JDBCManager {
 		Statement st;
 		try {
 			String query = PropertiesReading.getProperty(getServer() + ".query.columns");
-
 			query = query.replace("?1", database);
 			query = query.replace("?2", tableName);
 			st = getConnection().createStatement();
-			ResultSet rs = st.executeQuery(query); // Execute query
+			ResultSet rs = st.executeQuery(query); 
 			while (rs.next()) {
 				Column column = new Column();
 				column.setName(rs.getString("column_name"));
@@ -162,97 +161,67 @@ public class JDBCManager {
 					column.setIsPrimaryKey(rs.getString("column_key").equals("PRI"));
 					column.setIsForeignKey(rs.getString("column_key").equals("MUL"));
 				}
+				
+//				column.setName(rs.getString("column_name"));
+//				column.setDataType(rs.getString("data_type"));
+//				column.setIsNullable(rs.getBoolean("is_nullable"));	
+//				column.setIsNullable(rs.getBoolean("AutoIncrement"));
+//				column.setIsPrimaryKey(rs.getBoolean("IsPrimaryKey"));
+//				column.setIsForeignKey(rs.getBoolean("IsForeignKey"));
+//				column.setTableReference(rs.getString("TABLE_REFERENCE"));
 				columns.add(column);
 			}
-
-			st.close(); // close statement
+			st.close(); 
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return columns;
 	}
 
-	/**
-	 * @return the con
-	 */
 	public Connection getConnection() {
 		return con;
 	}
 
-	/**
-	 * @param con the con to set
-	 */
 	public void setConnection(Connection con) {
 		this.con = con;
 	}
 
-	/**
-	 * @return the host
-	 */
 	public String getHost() {
 		return host;
 	}
 
-	/**
-	 * @param host the host to set
-	 */
 	public void setHost(String host) {
 		this.host = host;
 	}
 
-	/**
-	 * @return the port
-	 */
 	public String getPort() {
 		return port;
 	}
 
-	/**
-	 * @param port the port to set
-	 */
 	public void setPort(String port) {
 		this.port = port;
 	}
 
-	/**
-	 * @return the username
-	 */
 	public String getUsername() {
 		return username;
 	}
 
-	/**
-	 * @param username the username to set
-	 */
 	public void setUsername(String username) {
 		this.username = username;
 	}
 
-	/**
-	 * @return the password
-	 */
 	public String getPassword() {
 		return password;
 	}
 
-	/**
-	 * @param password the password to set
-	 */
 	public void setPassword(String password) {
 		this.password = password;
 	}
 
-	/**
-	 * @return the server
-	 */
 	public String getServer() {
 		return server;
 	}
 
-	/**
-	 * @param server the server to set
-	 */
 	public void setServer(String server) {
 		this.server = server;
 	}

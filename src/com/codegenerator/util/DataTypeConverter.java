@@ -5,6 +5,7 @@ import java.util.Map;
 
 public class DataTypeConverter {
 	
+	
 	public static Map<String, String> mysqlToJava = new HashMap<String, String>(){{
 		put("bit", "boolean");
 		put("tinyint", "Integer");
@@ -47,7 +48,8 @@ public class DataTypeConverter {
 		put("nchar","String");	
 		put("nvarchar","String");	
 		put("binary","byte[]");
-		put("varbinary","byte[]");	
+		put("varbinary","byte[]");
+		put("image","byte[]");
 		put("nvarchar","String");
 		put("varbinary","byte[]");	
 		put("uniqueidentifier","String");	

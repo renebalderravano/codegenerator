@@ -98,9 +98,9 @@ public class BackEndGenerator {
 							+ "\\configuration\\HibernateConfiguration.java",
 					false);
 
-			FileManager.copyDir(PropertiesReading.folder_codegenerator_util + "/configuration/WebConfiguration.java",
-					packagePath + "\\" + packageName.replace(".", "\\") + "\\configuration\\WebConfiguration.java",
-					false);
+//			FileManager.copyDir(PropertiesReading.folder_codegenerator_util + "/configuration/WebConfiguration.java",
+//					packagePath + "\\" + packageName.replace(".", "\\") + "\\configuration\\WebConfiguration.java",
+//					false);
 
 			FileManager.replaceTextInFilesFolder(
 					packagePath + "\\" + packageName.replace(".", "\\") + "\\configuration", "[packageName]",
@@ -214,25 +214,29 @@ public class BackEndGenerator {
 		}
 		return dataTypeJava;
 	}
-	
+
 	private String capitalizeText(String text) {
 		text = text.toLowerCase().substring(0, 1).toUpperCase() + text.toLowerCase().substring(1, text.length());
 		return text;
 	}
-	
-	private String convertTextToCamelCase(String text) {		
+
+	private String formatText(String text, boolean capitalize) {
 		String[] data = text.split("_");
-		if(data.length > 1) {
-			String aux = data[0].toLowerCase();
-			for (int i = 1; i < data.length; i++) {				
-				aux += data[i].substring(0, 1).toLowerCase() + data[i].substring(1, data[i].length());
+		if (data.length > 1) {
+			String aux = (capitalize ? data[0].substring(0, 1).toUpperCase() : data[0].substring(0, 1).toLowerCase())
+					+ data[0].substring(1, data[0].length());
+			for (int i = 1; i < data.length; i++) {
+				aux += data[i].substring(0, 1).toUpperCase() + data[i].substring(1, data[i].length());
 			}
+
 			text = aux;
+		} else {
+
+			text = (capitalize ? text.substring(0, 1).toUpperCase() : text.substring(0, 1).toLowerCase())
+					+ text.substring(1, text.length());
+
 		}
-		else {
-			text = text.substring(0, 1).toLowerCase() + text.substring(1, text.length());
-		}
-		
+
 		return text;
 	}
 
@@ -240,85 +244,94 @@ public class BackEndGenerator {
 
 		try {
 
-			String pathModel = packagePath + "\\" + packageName.replace(".", "\\") + "\\model\\"
-					+ capitalizeText(tableName) + ".java";
-			File f = new File(pathModel);
+			var col = columns.stream().filter(x -> x.getIsPrimaryKey()).toList();
 
-			if (f.exists()) {
-				System.out.println("");
-				return true;
-			} else if (columns == null)
-				columns = jdbcManager.getColumnsByTable(databaseName, tableName);
+			if (col.size() == 1) {
 
-			f.createNewFile();
-			Writer w = new OutputStreamWriter(new FileOutputStream(f));
+				String pathModel = packagePath + "\\" + packageName.replace(".", "\\") + "\\model\\"
+						+ formatText(tableName, true) // capitalizeText(tableName)
+						+ ".java";
+				File f = new File(pathModel);
 
-			w.append("package " + packageName + ".model;\n\n");
+				if (f.exists()) {
+					System.out.println("");
+					return true;
+				} else if (columns == null)
+					columns = jdbcManager.getColumnsByTable(databaseName, tableName);
 
-			w.append("import javax.persistence.*;\n");
+				f.createNewFile();
+				Writer w = new OutputStreamWriter(new FileOutputStream(f));
 
-			w.append("@Entity\n");
-			w.append("@Table(name = \"" + tableName + "\")\n");
-			w.append("public class " + capitalizeText(tableName) + "{ \n\n");
+				w.append("package " + packageName + ".model;\n\n");
 
-			// Add properties
-			for (Column column : columns) {
-				if (!column.getIsForeigKey()) {
-					if (column.getIsPrimaryKey()) {
-						w.append("\t@Id\n");
-						w.append("\t@GeneratedValue(strategy= GenerationType.IDENTITY)\n");
+				w.append("import javax.persistence.*;\n");
+
+				w.append("@Entity\n");
+				w.append("@Table(name = \"" + tableName + "\")\n");
+				w.append("public class " + formatText(tableName, true) + "{ \n\n");
+
+				// Add properties
+				for (Column column : columns) {
+					if (!column.getIsForeigKey()) {
+						if (column.getIsPrimaryKey()) {
+							w.append("\t@Id\n");
+							w.append("\t@GeneratedValue(strategy= GenerationType.IDENTITY)\n");
+						}
+						if (column.getName().equals("housingLocation_id"))
+							System.out.println("");
+						w.append("\t@Column(name = \"" + column.getName() + "\")\n");
+						w.append("\tprivate " + getDataTypeJava(this.server, column.getDataType()) + " "
+								+ formatText(column.getName(), false) + ";\n\n");
+					} else {
+
+						String foreignKeyColumn = formatText(column.getName().replace("_id", ""), true);
+						w.append("\t@ManyToOne\n");
+						w.append("\tprivate " + foreignKeyColumn + " " + foreignKeyColumn.toLowerCase() + ";\n\n");
 					}
-					w.append("\t@Column(name = \"" + column.getName() + "\")\n");
-					w.append("\tprivate " + getDataTypeJava(this.server, column.getDataType()) + " "
-							+ column.getName().toLowerCase() + ";\n\n");
-				} else {
-					String foreignKeyColumn = capitalizeText(column.getName().replace("_id", ""));
-					w.append("\t@ManyToOne\n");
-					w.append("\tprivate " + foreignKeyColumn + " " + foreignKeyColumn.toLowerCase() + ";\n\n");
 				}
+
+				// Add constructor
+
+				w.append("\tpublic " + formatText(tableName, true) + "(){\n");
+				w.append("\t}\n\n");
+
+				// Add method setters and getters
+
+				for (Column column : columns) {
+
+					if (column.getName().equals("housingLocation_id"))
+						System.out.println("");
+
+					if (!column.getIsForeigKey()) {
+						w.append("\tpublic " + getDataTypeJava(this.server, column.getDataType()) + " get"
+								+ formatText(column.getName(), true) + "(){\n");
+						w.append("\t\treturn " + formatText(column.getName(), false) + ";\n");
+						w.append("\t}\n\n");
+
+						w.append("\tpublic void set" + formatText(column.getName().toLowerCase(), true) + "("
+								+ getDataTypeJava(this.server, column.getDataType()) + " "
+								+ formatText(column.getName(), false) + "){\n");
+						w.append("\t\tthis." + formatText(column.getName(), false) + " = "
+								+ formatText(column.getName(), false) + ";\n");
+						w.append("\t}\n\n");
+					} else {
+						String foreignKeyColumn = formatText(column.getName().replace("_id", ""), true);
+						w.append("\tpublic " + foreignKeyColumn + " get" + foreignKeyColumn + "(){\n");
+						w.append("\t\treturn " + foreignKeyColumn.toLowerCase() + ";\n");
+						w.append("\t}\n\n");
+
+						w.append("\tpublic void set" + foreignKeyColumn + "(" + foreignKeyColumn + " "
+								+ foreignKeyColumn.toLowerCase() + "){\n");
+						w.append("\t\tthis." + foreignKeyColumn.toLowerCase() + " = " + foreignKeyColumn.toLowerCase()
+								+ ";\n");
+						w.append("\t}\n\n");
+					}
+				}
+
+				w.append("}");
+
+				w.close();
 			}
-
-			// Add constructor
-
-			w.append("\tpublic " + capitalizeText(tableName) + "(){\n");
-			w.append("\t}\n\n");
-
-			// Add method setters and getters
-
-			for (Column column : columns) {
-
-				if (!column.getIsForeigKey()) {
-					w.append("\tpublic " + getDataTypeJava(this.server, column.getDataType()) + " get"
-							+ capitalizeText(column.getName().toLowerCase()) + "(){\n");
-					w.append("\t\treturn " + column.getName().toLowerCase() + ";\n");
-					w.append("\t}\n\n");
-
-					w.append("\tpublic void set" + capitalizeText(column.getName().toLowerCase()) + "("
-							+ getDataTypeJava(this.server, column.getDataType()) + " " + column.getName().toLowerCase()
-							+ "){\n");
-					w.append("\t\tthis." + column.getName().toLowerCase() + " = " + column.getName().toLowerCase()
-							+ ";\n");
-					w.append("\t}\n\n");
-				}
-				else {
-					String foreignKeyColumn = capitalizeText(column.getName().replace("_id", ""));
-					w.append("\tpublic " + foreignKeyColumn + " get"
-							+ foreignKeyColumn + "(){\n");
-					w.append("\t\treturn " + foreignKeyColumn.toLowerCase() + ";\n");
-					w.append("\t}\n\n");
-
-					w.append("\tpublic void set" + foreignKeyColumn + "("
-							+ foreignKeyColumn + " " + foreignKeyColumn.toLowerCase()
-							+ "){\n");
-					w.append("\t\tthis." + foreignKeyColumn.toLowerCase() + " = " + foreignKeyColumn.toLowerCase()
-							+ ";\n");
-					w.append("\t}\n\n");
-				}
-			}
-
-			w.append("}");
-			w.close();
-
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -332,7 +345,7 @@ public class BackEndGenerator {
 	public boolean generateRepository(String tableName) {
 		try {
 			String pathModel = packagePath + "\\" + packageName.replace(".", "\\") + "\\repository\\"
-					+ capitalizeText(tableName) + "Repository.java";
+					+ formatText(tableName, true) + "Repository.java";
 			File f = new File(pathModel);
 			f.createNewFile();
 			Writer w = new OutputStreamWriter(new FileOutputStream(f));
@@ -340,13 +353,13 @@ public class BackEndGenerator {
 			w.append("package " + packageName + ".repository;\n\n");
 			w.append("import " + packageName + ".model." + capitalizeText(tableName) + ";\n");
 			w.append("import " + packageName + ".util.IBase;\n\n");
-			w.append("public interface " + capitalizeText(tableName) + "Repository extends IBase<"
-					+ capitalizeText(tableName) + ">{ \n\n");
+			w.append("public interface " + formatText(tableName, true) + "Repository extends IBase<"
+					+ formatText(tableName, true) + ">{ \n\n");
 			w.append("}");
 			w.close();
 
 			pathModel = packagePath + "\\" + packageName.replace(".", "\\") + "\\repository\\impl\\"
-					+ capitalizeText(tableName) + "RepositoryImpl.java";
+					+ formatText(tableName, true) + "RepositoryImpl.java";
 			f = new File(pathModel);
 			f.createNewFile();
 			w = new OutputStreamWriter(new FileOutputStream(f));
@@ -354,13 +367,14 @@ public class BackEndGenerator {
 			w.append("package " + packageName + ".repository.impl;\n\n");
 
 			w.append("import org.springframework.stereotype.Repository;\n");
-			w.append("import " + packageName + ".model." + capitalizeText(tableName) + ";\n");
-			w.append("import " + packageName + ".repository." + capitalizeText(tableName) + "Repository;\n");
+			w.append("import " + packageName + ".model." + formatText(tableName, true) + ";\n");
+			w.append("import " + packageName + ".repository." + formatText(tableName, true) + "Repository;\n");
 			w.append("import " + packageName + ".util.BaseRepository;\n\n");
 
 			w.append("@Repository\n");
-			w.append("public class " + capitalizeText(tableName) + "RepositoryImpl extends BaseRepository<"
-					+ capitalizeText(tableName) + "> implements " + capitalizeText(tableName) + "Repository { \n\n");
+			w.append("public class " + formatText(tableName, true) + "RepositoryImpl extends BaseRepository<"
+					+ formatText(tableName, true) + "> implements " + formatText(tableName, true)
+					+ "Repository { \n\n");
 
 			w.append("}");
 			w.close();
@@ -379,22 +393,22 @@ public class BackEndGenerator {
 		try {
 
 			String pathModel = packagePath + "\\" + packageName.replace(".", "\\") + "\\service\\"
-					+ capitalizeText(tableName) + "Service.java";
+					+ formatText(tableName, true) + "Service.java";
 			File f = new File(pathModel);
 			f.createNewFile();
 			Writer w = new OutputStreamWriter(new FileOutputStream(f));
 
 			w.append("package " + packageName + ".service;\n\n");
-			w.append("import " + packageName + ".model." + capitalizeText(tableName) + ";\n");
+			w.append("import " + packageName + ".model." + formatText(tableName, true) + ";\n");
 			w.append("import " + packageName + ".util.IBase;\n\n");
-			w.append("public interface " + capitalizeText(tableName) + "Service extends IBase<"
-					+ capitalizeText(tableName) + ">{ \n\n");
+			w.append("public interface " + formatText(tableName, true) + "Service extends IBase<"
+					+ formatText(tableName, true) + ">{ \n\n");
 
 			w.append("}");
 			w.close();
 
 			pathModel = packagePath + "\\" + packageName.replace(".", "\\") + "\\service\\impl\\"
-					+ capitalizeText(tableName) + "ServiceImpl.java";
+					+ formatText(tableName, true) + "ServiceImpl.java";
 			f = new File(pathModel);
 			f.createNewFile();
 			w = new OutputStreamWriter(new FileOutputStream(f));
@@ -402,13 +416,13 @@ public class BackEndGenerator {
 			w.append("package " + packageName + ".service.impl;\n\n");
 
 			w.append("import org.springframework.stereotype.Service;\n");
-			w.append("import " + packageName + ".model." + capitalizeText(tableName) + ";\n");
-			w.append("import " + packageName + ".service." + capitalizeText(tableName) + "Service;\n");
+			w.append("import " + packageName + ".model." + formatText(tableName, true) + ";\n");
+			w.append("import " + packageName + ".service." + formatText(tableName, true) + "Service;\n");
 			w.append("import " + packageName + ".util.BaseService;\n\n");
 
 			w.append("@Service\n");
-			w.append("public class " + capitalizeText(tableName) + "ServiceImpl extends BaseService<"
-					+ capitalizeText(tableName) + "> implements " + capitalizeText(tableName) + "Service { \n\n");
+			w.append("public class " + formatText(tableName, true) + "ServiceImpl extends BaseService<"
+					+ formatText(tableName, true) + "> implements " + formatText(tableName, true) + "Service { \n\n");
 			w.append("}");
 			w.close();
 
@@ -426,7 +440,7 @@ public class BackEndGenerator {
 		try {
 
 			String pathModel = packagePath + "\\" + packageName.replace(".", "\\") + "\\controller\\"
-					+ capitalizeText(tableName) + "Controller.java";
+					+ formatText(tableName, true) + "Controller.java";
 			File f = new File(pathModel);
 			f.createNewFile();
 			Writer w = new OutputStreamWriter(new FileOutputStream(f));
@@ -435,13 +449,13 @@ public class BackEndGenerator {
 
 			w.append("import org.springframework.web.bind.annotation.RequestMapping;\n");
 			w.append("import org.springframework.web.bind.annotation.RestController;\n");
-			w.append("import " + packageName + ".model." + capitalizeText(tableName) + ";\n");
+			w.append("import " + packageName + ".model." + formatText(tableName, true) + ";\n");
 			w.append("import " + packageName + ".util.BaseController;\n\n");
 
 			w.append("@RestController\n");
 			w.append("@RequestMapping(path = \"" + tableName + "\")\n");
-			w.append("public class " + capitalizeText(tableName) + "Controller extends BaseController<"
-					+ capitalizeText(tableName) + "> { \n\n");
+			w.append("public class " + formatText(tableName, true) + "Controller extends BaseController<"
+					+ formatText(tableName, true) + "> { \n\n");
 			w.append("}");
 			w.close();
 
