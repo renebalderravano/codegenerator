@@ -44,7 +44,7 @@ public class FrontEndGenerator implements IFrontEndGenerator {
 		File f = new File(workspace + "\\" + projectName);
 		f.mkdir();
 		
-		FileManager.copyDir(PropertiesReading.folder_codegenerator_util + "/frontend",
+		FileManager.copyDir(PropertiesReading.folder_codegenerator_util + "/FrontEnd",
 				packagePath + "\\" + packageName.replace(".", "\\") + "\\util", false);
 		
 		
