@@ -19,6 +19,8 @@ import javax.swing.table.DefaultTableModel;
 
 import com.codegenerator.connection.JDBCManager;
 import com.codegenerator.generator.BackEndGenerator;
+import com.codegenerator.generator.FrontEndGenerator;
+import com.codegenerator.util.FileManager;
 
 public class DataBaseFrame extends JFrame {
 
@@ -163,16 +165,39 @@ public class DataBaseFrame extends JFrame {
 		
 		JButton btnGenerar = new JButton("Generar");
 		btnGenerar.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {				
+			public void actionPerformed(ActionEvent e) {
+				
+				String workspace = txtWorkspace.getText();
+				
+				FileManager.createFolder(workspace, txtProjectName.getText());
+				
+				workspace = workspace + "\\" + txtProjectName.getText();
+				String backendName = txtProjectName.getText()+ "Backend";
+				
 				BackEndGenerator backEndGenerator = new BackEndGenerator(server,
 																		databaseName,
 																		tables, 
 																		jdbcManager, 
-																		txtWorkspace.getText(), 
-																		txtProjectName.getText(), 
+																		workspace, 
+																		backendName, 
 																		txtPaquetePrincipal.getText(), 
 																		chkAddSecurity.isSelected());				
 				boolean isGenerated = backEndGenerator.generar();
+				
+				
+				String frontendName = txtProjectName.getText()+ "Frontend";
+				
+				FrontEndGenerator frontEndGenerator = new FrontEndGenerator(server,
+						databaseName,
+						tables, 
+						jdbcManager, 
+						workspace, 
+						frontendName, 
+						txtPaquetePrincipal.getText(), 
+						chkAddSecurity.isSelected());	
+				
+				
+				boolean isFrontGenerated = frontEndGenerator.generate();
 				
 				JOptionPane.showMessageDialog(null, isGenerated ? "Proyecto Generado Exitosamente": "Error al generar el proyecto");
 				

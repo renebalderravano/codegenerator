@@ -195,7 +195,7 @@ public class BackEndGenerator {
 			FileManager.replaceTextInFile(resourcesPath + "\\application.properties", "[dialect]",
 					PropertiesReading.getProperty(jdbcManager.getServer() + ".dialect"));
 
-			FileManager.replaceTextInFile(resourcesPath + "\\application.properties", "[projectName]", projectName);
+			FileManager.replaceTextInFile(resourcesPath + "\\application.properties", "[packageName]", packageName);
 
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -234,7 +234,6 @@ public class BackEndGenerator {
 
 			text = (capitalize ? text.substring(0, 1).toUpperCase() : text.substring(0, 1).toLowerCase())
 					+ text.substring(1, text.length());
-
 		}
 
 		return text;

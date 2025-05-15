@@ -43,11 +43,12 @@ public class FileManager {
 
 				String content;
 				try {
-					content = new String(Files.readAllBytes(path), charset);
-					content = content.replace(oldText, newText);
-					Files.write(path, content.getBytes(charset));
+					if (!Files.isDirectory(path)) {
+						content = new String(Files.readAllBytes(path), charset);
+						content = content.replace(oldText, newText);
+						Files.write(path, content.getBytes(charset));
+					}
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
 					System.out.println("El archivo " + path + " ya existe");
 				}
 
@@ -60,21 +61,24 @@ public class FileManager {
 	}
 
 	public static void replaceTextInFile(String filePath, String oldText, String newText) {
+		
 		Path path = null;
 		try {
 			path = Paths.get(filePath);
-			Charset charset = StandardCharsets.UTF_8;
 
-			String content = new String(Files.readAllBytes(path), charset);
-			content = content.replace(oldText, newText);
-			Files.write(path, content.getBytes(charset));
+			if (!Files.isDirectory(path)) {
+				Charset charset = StandardCharsets.UTF_8;
+				String content = new String(Files.readAllBytes(path), charset);
+				content = content.replace(oldText, newText);
+				Files.write(path, content.getBytes(charset));
+			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			System.out.println("El archivo " + path + " no existe");
 		}
+		
 	}
-	
-	
+
 	public static void createRootDirectory(String workspace, String folderName) {
 
 		File f = new File(workspace + "\\" + folderName);
@@ -85,9 +89,8 @@ public class FileManager {
 		f.mkdir();
 		f = new File(workspace + "\\" + folderName + "\\src\\main\\java");
 		f.mkdir();
-				f = new File(workspace + "\\" + folderName + "\\src\\main\\resources");
+		f = new File(workspace + "\\" + folderName + "\\src\\main\\resources");
 		f.mkdir();
-
 	}
 
 	public static void createPackage(String packagePath, String packageName) {
@@ -108,5 +111,4 @@ public class FileManager {
 
 	}
 
-	
 }
