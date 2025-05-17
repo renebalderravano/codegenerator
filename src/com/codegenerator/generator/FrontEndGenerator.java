@@ -1,16 +1,19 @@
 package com.codegenerator.generator;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.codegenerator.connection.JDBCManager;
 import com.codegenerator.util.Column;
 import com.codegenerator.util.FileManager;
 import com.codegenerator.util.PropertiesReading;
 import com.codegenerator.util.Table;
+import com.codegenerator.util.TextUtil;
 
 public class FrontEndGenerator implements IFrontEndGenerator {
-	
+
 	Set<Object[]> tables;
 	JDBCManager jdbcManager;
 	String packageName;
@@ -22,7 +25,7 @@ public class FrontEndGenerator implements IFrontEndGenerator {
 	String server = "";
 
 	boolean addOAuth2;
-	
+
 	public FrontEndGenerator(String server, String databaseName, Set<Object[]> tables, JDBCManager jdbcManager,
 			String workspace, String projectName, String packageName, boolean addOAuth2) {
 		this.databaseName = databaseName;
@@ -39,21 +42,26 @@ public class FrontEndGenerator implements IFrontEndGenerator {
 
 	@Override
 	public Boolean generate() {
-		
+
 		FileManager.createFolder(workspace, projectName);
-		FileManager.replaceTextInFilesFolder(workspace + "\\" + projectName,
-				"[projectName]", projectName);
-		
+
+		FileManager.copyDir(PropertiesReading.folder_codegenerator_util + "/FrontEnd/[projectName]",
+				workspace + "\\" + projectName, true);
+
+		FileManager.replaceTextInFilesFolder(workspace + "\\" + projectName, "[projectName]", projectName);
+
 		for (Object[] table : tables) {
 			String tableName = (String) table[0];
 			List<Column> columns = jdbcManager.getColumnsByTable(databaseName, tableName);
 			Table tbl = new Table();
 			tbl.setName(tableName);
 			tbl.setColumns(columns);
-//			generateModel(tableName, columns);
 			generateService(tableName);
+			generateComponent(tableName, columns);
 		}
 		
+		configurar();
+
 		return true;
 	}
 
@@ -66,88 +74,134 @@ public class FrontEndGenerator implements IFrontEndGenerator {
 	@Override
 	public Boolean generateService(String tableName) {
 
-		String pathService = packagePath + "\\services\\" + formatText(tableName, false) + ".service.ts";
-		
+		String pathService = packagePath + "\\services\\" + TextUtil.convertToSnakeCase(tableName) + ".service.ts";
+
 		try {
-			FileManager.copyDir(PropertiesReading.folder_codegenerator_util + "/FrontEnd/service",					
-					workspace + "\\" + formatText(tableName, false), false);
-			
+
+			FileManager.copyDir(
+					PropertiesReading.folder_codegenerator_util + "/FrontEnd/service/[tableName].service.ts",
+					pathService, false);
+
+			FileManager.replaceTextInFile(pathService, "[tableName]Service",
+					TextUtil.capitalizeText(TextUtil.convertToCamelCase(tableName)) + "Service");
+
+			FileManager.replaceTextInFile(pathService, "[tableName]", TextUtil.convertToCamelCase(tableName));
+
 		} catch (Exception e) {
-			// TODO: handle exception
+			System.out.println(e.getMessage());
 		}
-		
-		
+
 		return null;
 	}
 
 	@Override
 	public Boolean generateComponent(String tableName, List<Column> columns) {
-		
-		FileManager.copyDir(PropertiesReading.folder_codegenerator_util + "/FrontEnd/component",
-				workspace + "\\" + projectName, false);
-		return null;
-	}
-	
-	
 
+		FileManager.createFolder(packagePath + "\\views\\", TextUtil.convertToSnakeCase(tableName));
 
-	private String formatText(String text, boolean capitalize) {
-		String[] data = text.split("_");
-		if (data.length > 1) {
-//			String aux = (capitalize ? data[0].substring(0, 1).toUpperCase() : data[0].substring(0, 1).toLowerCase())
-//					+ data[0].substring(1, data[0].length());
-//			for (int i = 1; i < data.length; i++) {
-//				aux += data[i].substring(0, 1).toUpperCase() + data[i].substring(1, data[i].length());
-//			}
-//
-			text = text.toLowerCase();
-		} else {
+		String componentFolder = packagePath + "\\views\\" + TextUtil.convertToSnakeCase(tableName);
 
-			text = (capitalize ? text.substring(0, 1).toUpperCase() : text.substring(0, 1).toLowerCase())
-					+ text.substring(1, text.length());
+		/*
+		 * COMPONENT
+		 */
+
+		String componentPath = componentFolder + "\\" + TextUtil.convertToSnakeCase(tableName) + ".component.ts";
+
+		FileManager.copyDir(
+				PropertiesReading.folder_codegenerator_util + "/FrontEnd/component/[tableName].component.ts",
+				componentPath, false);
+
+		FileManager.replaceTextInFile(componentPath, "CAMEL_CASE_CAP[tableName]",
+				TextUtil.capitalizeText(TextUtil.convertToCamelCase(tableName)));
+
+		FileManager.replaceTextInFile(componentPath, "CAMEL_CASE[tableName]", TextUtil.convertToCamelCase(tableName));
+
+		FileManager.replaceTextInFile(componentPath, "SNAKE_CASE[tableName]", TextUtil.convertToSnakeCase(tableName));
+
+		/*
+		 * SCSS
+		 */
+		String scssPath = componentFolder + "\\" + TextUtil.convertToSnakeCase(tableName) + ".component.scss";
+
+		FileManager.copyDir(
+				PropertiesReading.folder_codegenerator_util + "/FrontEnd/component/[tableName].component.scss",
+				scssPath, false);
+
+		/*
+		 * ROUTES
+		 */
+		String routesPath = componentFolder + "\\" + TextUtil.convertToSnakeCase(tableName) + ".routes.ts";
+		FileManager.copyDir(PropertiesReading.folder_codegenerator_util + "/FrontEnd/component/[tableName].routes.ts",
+				routesPath, false);
+
+		FileManager.replaceTextInFile(routesPath, "CAMEL_CASE_CAP[tableName]",
+				TextUtil.capitalizeText(TextUtil.convertToCamelCase(tableName)));
+
+		FileManager.replaceTextInFile(routesPath, "CAMEL_CASE[tableName]", TextUtil.convertToCamelCase(tableName));
+
+		FileManager.replaceTextInFile(routesPath, "SNAKE_CASE[tableName]", TextUtil.convertToSnakeCase(tableName));
+
+		/*
+		 * HTML
+		 */
+		String htmlPath = componentFolder + "\\" + TextUtil.convertToSnakeCase(tableName) + ".component.html";
+
+		FileManager.copyDir(
+				PropertiesReading.folder_codegenerator_util + "/FrontEnd/component/[tableName].component.html",
+				htmlPath, false);
+		FileManager.replaceTextInFile(htmlPath, "CAMEL_CASE_CAP[tableName]",
+				TextUtil.capitalizeText(TextUtil.convertToCamelCase(tableName)));
+
+		FileManager.replaceTextInFile(htmlPath, "CAMEL_CASE[tableName]", TextUtil.convertToCamelCase(tableName));
+
+		// crear columnas de la tabla
+
+		String columnsTable = "";
+		String fieldRows = "";
+
+		for (Column column : columns) {
+
+			String[] partes = TextUtil.capitalizeText(TextUtil.convertToCamelCase(column.getName())).split("(?=[A-Z])");
+			String columnName = Arrays.stream(partes).collect(Collectors.joining(" "));
+			columnsTable += "\t\t\t\t\t\t\t\t<th>" + columnName + "</th>\n";
+			fieldRows    += "\t\t\t\t\t\t\t\t<td>{{" + TextUtil.convertToCamelCase(tableName) + "."+ TextUtil.convertToCamelCase(column.getName()) + "}}</td>\n";
 		}
 
-		return text;
+		FileManager.replaceTextInFile(htmlPath, "[columnsTable]", columnsTable);
+		FileManager.replaceTextInFile(htmlPath, "[fields_row]", fieldRows);
+		return true;
 	}
-	
-	
-	enum TYPEOFCASE{
-		CAMEL_CASE,
-		SNAKE_CASE
-	}
-	
-	private String formatText(String text, TYPEOFCASE CASE) {
-		String[] data = text.split("_");
-		
-		switch (CASE) {
-		case CAMEL_CASE: 
-			
-			
-		break;
-		case SNAKE_CASE:
-			
-			break;
-		
-		default:
-			throw new IllegalArgumentException("Unexpected value: " + CASE);
+
+	public Boolean configurar() {
+
+		String option = "";
+
+		for (Object[] table : tables) {
+			String tableName = (String) table[0];
+			option += "\t{\n";
+			option += "\t\tname: '"+TextUtil.convertToSnakeCase(tableName)+"',\n";
+			option += "\t\turl: '/"+TextUtil.convertToSnakeCase(tableName)+"',\n";
+			option += "\t\ticonComponent: { name: 'cil-dollar' }\n";
+			option += "\t},\n";
 		}
 		
+		String navClass = packagePath + "\\common\\"+ "_nav.ts";
+		FileManager.replaceTextInFile(navClass, "//ArrayOptions", option);
 		
-		if (data.length > 1) {
-//			String aux = (capitalize ? data[0].substring(0, 1).toUpperCase() : data[0].substring(0, 1).toLowerCase())
-//					+ data[0].substring(1, data[0].length());
-//			for (int i = 1; i < data.length; i++) {
-//				aux += data[i].substring(0, 1).toUpperCase() + data[i].substring(1, data[i].length());
-//			}
-//
-			text = text.toLowerCase();
-		} else {
-
-//			text = (capitalize ? text.substring(0, 1).toUpperCase() : text.substring(0, 1).toLowerCase())
-//					+ text.substring(1, text.length());
+		String routes = "";
+		for (Object[] table : tables) {
+			String tableName = (String) table[0];
+			routes += "\t\t{\n";
+			routes += "\t\t\tpath: '"+TextUtil.convertToSnakeCase(tableName)+"',\n";
+			routes += "\t\t\tloadChildren: () => import('./views/"+TextUtil.convertToSnakeCase(tableName)+"/"+TextUtil.convertToSnakeCase(tableName)+".routes').then((m) => m.routes)\n";
+			routes += "\t\t},\n";
 		}
+		
+		String routesClass = packagePath + "\\"+ "app.routes.ts";
+		
+		FileManager.replaceTextInFile(routesClass, "//ArrayRoutes", routes);
 
-		return text;
+		return true;
 	}
-	
+
 }
