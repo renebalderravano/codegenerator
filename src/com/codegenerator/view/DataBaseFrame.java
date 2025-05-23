@@ -54,7 +54,7 @@ public class DataBaseFrame extends JFrame {
 	
 	private void initialize() {
 		
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		setBounds(450, 150, 432, 506);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -162,11 +162,11 @@ public class DataBaseFrame extends JFrame {
 		btnRegresar.setBounds(210, 414, 89, 23);
 		contentPane.add(btnRegresar);
 		
-		
+		JFrame frame = this;
 		JButton btnGenerar = new JButton("Generar");
 		btnGenerar.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				
+								
 				String workspace = txtWorkspace.getText();
 				
 				FileManager.createFolder(workspace, txtProjectName.getText());
@@ -182,7 +182,7 @@ public class DataBaseFrame extends JFrame {
 																		backendName, 
 																		txtPaquetePrincipal.getText(), 
 																		chkAddSecurity.isSelected());				
-				boolean isGenerated = backEndGenerator.generar();
+//				boolean isGenerated = backEndGenerator.generar();
 				
 				
 				String frontendName = txtProjectName.getText()+ "Frontend";
@@ -197,11 +197,17 @@ public class DataBaseFrame extends JFrame {
 						chkAddSecurity.isSelected());	
 				
 				
-				boolean isFrontGenerated = frontEndGenerator.generate();
+//				boolean isFrontGenerated = frontEndGenerator.generate();
+//				
+//				JOptionPane.showMessageDialog(null, isGenerated ? "Proyecto Generado Exitosamente": "Error al generar el proyecto");
+//				
+//				System.out.println("Proyecto generado!!!");
 				
-				JOptionPane.showMessageDialog(null, isGenerated ? "Proyecto Generado Exitosamente": "Error al generar el proyecto");
 				
-				System.out.println("Proyecto generado!!!");
+				GeneratorInitializer generatorLog = new GeneratorInitializer(txtProjectName.getText(),workspace,backEndGenerator, frontEndGenerator);
+				generatorLog.setModal(true);
+				generatorLog.setVisible(true);
+				generatorLog.setLocationRelativeTo(frame);
 			}
 		});
 		btnGenerar.setBounds(306, 414, 89, 23);

@@ -1,5 +1,7 @@
 package com.codegenerator.generator;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -25,7 +27,9 @@ public class FrontEndGenerator implements IFrontEndGenerator {
 	String server = "";
 
 	boolean addOAuth2;
-
+	
+	private int processProgress = 0;
+	
 	public FrontEndGenerator(String server, String databaseName, Set<Object[]> tables, JDBCManager jdbcManager,
 			String workspace, String projectName, String packageName, boolean addOAuth2) {
 		this.databaseName = databaseName;
@@ -43,25 +47,40 @@ public class FrontEndGenerator implements IFrontEndGenerator {
 	@Override
 	public Boolean generate() {
 
+		setProcessProgress(0);
+		printLog("Generando...");
+		printLog("Creando Directorio para frontend..");
 		FileManager.createFolder(workspace, projectName);
-
+		setProcessProgress(30);
 		FileManager.copyDir(PropertiesReading.folder_codegenerator_util + "/FrontEnd/[projectName]",
 				workspace + "\\" + projectName, true);
 
 		FileManager.replaceTextInFilesFolder(workspace + "\\" + projectName, "[projectName]", projectName);
-
+		
+		int availableTime = 50;
+		int i=30;
 		for (Object[] table : tables) {
+			i+=(availableTime/(tables.size()));
+			setProcessProgress(i);
 			String tableName = (String) table[0];
+			printLog("Obteniendo columnas de la tabla " +tableName+"");
+			
 			List<Column> columns = jdbcManager.getColumnsByTable(databaseName, tableName);
 			Table tbl = new Table();
 			tbl.setName(tableName);
 			tbl.setColumns(columns);
+			printLog("Generando servicio de la tabla " +tableName+"");
 			generateService(tableName);
+			printLog("Generando componente de la tabla " +tableName+"");
 			generateComponent(tableName, columns);
+			
 		}
-		
+		setProcessProgress(80);
+		printLog("Aplicando configuración");
 		configurar();
-
+		setProcessProgress(90);
+		printLog("Front-End generado exitosamente!");
+		setProcessProgress(100);
 		return true;
 	}
 
@@ -203,5 +222,39 @@ public class FrontEndGenerator implements IFrontEndGenerator {
 
 		return true;
 	}
+
+	public int getProcessProgress() {
+		return processProgress;
+	}
+
+	public void setProcessProgress(int processProgress) {
+		this.processProgress = processProgress;
+	}
+	
+	private String log ="";
+	public String printLog(String text) {
+		this.log = getDateTime()+ " - "+ text +"\n";
+		setLog(log);
+		
+		return this.log;
+	}
+
+	public void setLog(String log) {	
+		
+		this.log = log;
+	}
+	public String getLog() {			
+		return this.log;
+	}
+	private String getDateTime() {		
+		// Get the current date and time
+        LocalDateTime currentDateTime = LocalDateTime.now();
+
+        // Format the date and time (optional)
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        String formattedDateTime = currentDateTime.format(formatter);
+        return formattedDateTime;
+	}
+
 
 }

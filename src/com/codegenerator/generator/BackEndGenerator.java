@@ -12,6 +12,8 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.io.Writer;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Set;
 
@@ -29,12 +31,14 @@ public class BackEndGenerator {
 	JDBCManager jdbcManager;
 	String packageName;
 	String workspace;
-	String projectName;
+	private String projectName;
 	String packagePath = "";
 	String resourcesPath = "";
 	String databaseName;
 	String server = "";
-
+	
+	private int processProgress = 0;
+	
 	boolean addOAuth2;
 
 	public BackEndGenerator(String server, String databaseName, Set<Object[]> tables, JDBCManager jdbcManager,
@@ -52,10 +56,12 @@ public class BackEndGenerator {
 	}
 
 	public boolean generar() {
-
-		System.out.println("Generando...");
+		setProcessProgress(0);
+		printLog("Generando...");
 		try {
-
+			
+			printLog("Creando Directorio para backend..");
+			
 			FileManager.createRootDirectory(workspace, projectName);
 			FileManager.createPackage(this.packagePath, this.packageName);
 			FileManager.createPackage(this.packagePath, this.packageName + ".configuration");
@@ -63,19 +69,27 @@ public class BackEndGenerator {
 			FileManager.createPackage(this.packagePath, this.packageName + ".repository.impl");
 			FileManager.createPackage(this.packagePath, this.packageName + ".service.impl");
 			FileManager.createPackage(this.packagePath, this.packageName + ".controller");
-
+			setProcessProgress(30);
 			for (Object[] table : tables) {
 				String tableName = (String) table[0];
+				printLog("Obteniendo columnas de la tabla " +tableName+"");
 				List<Column> columns = jdbcManager.getColumnsByTable(databaseName, tableName);
 				Table tbl = new Table();
 				tbl.setName(tableName);
 				tbl.setColumns(columns);
+				printLog("Generando modelo de la tabla " +tableName+"");
 				generateModel(tableName, columns);
+				printLog("Generando repositorio de la tabla " +tableName+"");
 				generateRepository(tableName);
+				printLog("Generando servicio de la tabla " +tableName+"");
 				generateService(tableName);
+				printLog("Generando controlador de la tabla " +tableName+"");
 				generateController(tableName);
 			}
+			
+			setProcessProgress(50);
 
+			printLog("Preparando carpeta util...");
 			// Preparar carpteta util
 			FileManager.copyDir(PropertiesReading.folder_codegenerator_util + "/util",
 					packagePath + "\\" + packageName.replace(".", "\\") + "\\util", false);
@@ -83,13 +97,15 @@ public class BackEndGenerator {
 			FileManager.replaceTextInFilesFolder(packagePath + "\\" + packageName.replace(".", "\\") + "\\util",
 					"[packageName]", packageName);
 
+			printLog("Preparando clase principal de spring Boot Application.java...");
 			// Preparar clase principal de spring Boot Application.java
 			FileManager.copyDir(PropertiesReading.folder_codegenerator_util + "/Application.java",
 					packagePath + "\\" + packageName.replace(".", "\\") + "\\Application.java", false);
 
 			FileManager.replaceTextInFile(packagePath + "\\" + packageName.replace(".", "\\") + "\\Application.java",
 					"[packageName]", packageName);
-
+			setProcessProgress(60);
+			printLog("Preparando configuración hibernate...");
 			// preparar configuracion Hibernate
 
 			FileManager.copyDir(
@@ -105,9 +121,10 @@ public class BackEndGenerator {
 			FileManager.replaceTextInFilesFolder(
 					packagePath + "\\" + packageName.replace(".", "\\") + "\\configuration", "[packageName]",
 					packageName);
-
+			setProcessProgress(70);
 			if (this.addOAuth2) {
 
+				printLog("Agregando Spring Security Oauth2...");
 				FileManager.copyDir(PropertiesReading.folder_codegenerator_util + "/security/pom.xml",
 						workspace + "\\" + projectName + "\\pom.xml", false);
 
@@ -118,14 +135,18 @@ public class BackEndGenerator {
 						packagePath + "\\" + packageName.replace(".", "\\") + "\\configuration", "[packageName]",
 						packageName);
 
+				printLog("\tCreando tablas requeridas por Spring Security Oauth2...");
 				addTablesSpringSecurity(databaseName);
 
+				printLog("\tCreando modelo user para Spring Security Oauth2...");
 				FileManager.copyDir(PropertiesReading.folder_codegenerator_util + "/security/model",
 						packagePath + "\\" + packageName.replace(".", "\\") + "\\model", false);
 
 				FileManager.replaceTextInFilesFolder(packagePath + "\\" + packageName.replace(".", "\\") + "\\model",
 						"[packageName]", packageName);
 
+				setProcessProgress(75);
+				printLog("\tCreando repository user para Spring Security Oauth2...");
 				FileManager.copyDir(
 						PropertiesReading.folder_codegenerator_util + "/security/repository/UserRepository.java",
 						packagePath + "\\" + packageName.replace(".", "\\") + "\\repository\\UserRepository.java",
@@ -144,12 +165,13 @@ public class BackEndGenerator {
 
 				FileManager.replaceTextInFilesFolder(packagePath + "\\" + packageName.replace(".", "\\")
 						+ "\\repository\\impl\\UserRepositoryImpl.java", "[packageName]", packageName);
-
+				printLog("\tCreando service user para Spring Security Oauth2...");
 				generateService("User");
-
+				printLog("\tCreando repository authority para Spring Security Oauth2...");
 				generateRepository("Authority");
 				generateService("Authority");
 
+				printLog("\tCreando UserDetailsService para Spring Security Oauth2...");
 				FileManager.copyDir(
 						PropertiesReading.folder_codegenerator_util + "/UserDetailsServiceImpl.java", packagePath + "\\"
 								+ packageName.replace(".", "\\") + "\\service\\impl\\UserDetailsServiceImpl.java",
@@ -160,7 +182,9 @@ public class BackEndGenerator {
 			} else
 				FileManager.copyDir(PropertiesReading.folder_codegenerator_util + "/pom.xml",
 						workspace + "\\" + projectName + "\\pom.xml", false);
-
+			
+			setProcessProgress(80);
+			printLog("Preparando archivo pom.xml...");
 			// preparar archivo pom.xml
 			FileManager.replaceTextInFile(workspace + "\\" + projectName + "\\pom.xml", "[packageName]", packageName);
 			FileManager.replaceTextInFile(workspace + "\\" + projectName + "\\pom.xml", "[projectName]", projectName);
@@ -172,6 +196,8 @@ public class BackEndGenerator {
 			FileManager.replaceTextInFile(workspace + "\\" + projectName + "\\pom.xml", "[DBversion]",
 					PropertiesReading.getProperty(jdbcManager.getServer() + ".version"));
 
+			setProcessProgress(90);
+			printLog("Preparando archivo application.properties...");
 			// preparar archivo application.properties
 			FileManager.copyDir(PropertiesReading.folder_codegenerator_util + "/resources", resourcesPath, false);
 
@@ -198,9 +224,13 @@ public class BackEndGenerator {
 			FileManager.replaceTextInFile(resourcesPath + "\\application.properties", "[packageName]", packageName);
 
 		} catch (Exception e) {
+			
+			setProcessProgress(100);
 			e.printStackTrace();
 			return false;
 		}
+		
+		setProcessProgress(100);
 
 		return true;
 	}
@@ -239,21 +269,21 @@ public class BackEndGenerator {
 		return text;
 	}
 
-	public boolean generateModel(String tableName, List<Column> columns) {
+	
+	private boolean generateModel(String tableName, List<Column> columns) {
 
 		try {
 
-			var col = columns.stream().filter(x -> x.getIsPrimaryKey()).toList();
+			List<Column> col = columns.stream().filter(x -> x.getIsPrimaryKey()).toList();
 
 			if (col.size() == 1) {
 
 				String pathModel = packagePath + "\\" + packageName.replace(".", "\\") + "\\model\\"
 						+ formatText(tableName, true) // capitalizeText(tableName)
 						+ ".java";
-				File f = new File(pathModel);
-
+				File f = new File(pathModel);				
 				if (f.exists()) {
-					System.out.println("");
+					printLog("");
 					return true;
 				} else if (columns == null)
 					columns = jdbcManager.getColumnsByTable(databaseName, tableName);
@@ -276,8 +306,8 @@ public class BackEndGenerator {
 							w.append("\t@Id\n");
 							w.append("\t@GeneratedValue(strategy= GenerationType.IDENTITY)\n");
 						}
-						if (column.getName().equals("housingLocation_id"))
-							System.out.println("");
+//						if (column.getName().equals("housingLocation_id"))
+//							printLog("");
 						w.append("\t@Column(name = \"" + column.getName() + "\")\n");
 						w.append("\tprivate " + getDataTypeJava(this.server, column.getDataType()) + " "
 								+ formatText(column.getName(), false) + ";\n\n");
@@ -297,10 +327,7 @@ public class BackEndGenerator {
 				// Add method setters and getters
 
 				for (Column column : columns) {
-
-					if (column.getName().equals("housingLocation_id"))
-						System.out.println("");
-
+					
 					if (!column.getIsForeigKey()) {
 						w.append("\tpublic " + getDataTypeJava(this.server, column.getDataType()) + " get"
 								+ formatText(column.getName(), true) + "(){\n");
@@ -341,7 +368,8 @@ public class BackEndGenerator {
 		return true;
 	}
 
-	public boolean generateRepository(String tableName) {
+	
+	private boolean generateRepository(String tableName) {
 		try {
 			String pathModel = packagePath + "\\" + packageName.replace(".", "\\") + "\\repository\\"
 					+ formatText(tableName, true) + "Repository.java";
@@ -387,7 +415,8 @@ public class BackEndGenerator {
 		return true;
 	}
 
-	public boolean generateService(String tableName) {
+	
+	private boolean generateService(String tableName) {
 
 		try {
 
@@ -434,7 +463,8 @@ public class BackEndGenerator {
 		return true;
 	}
 
-	public boolean generateController(String tableName) {
+	
+	private boolean generateController(String tableName) {
 
 		try {
 
@@ -506,6 +536,51 @@ public class BackEndGenerator {
 		}
 
 		return stringReader;
+	}
+	
+	
+	private String log ="";
+	public String printLog(String text) {
+		
+		
+		this.log = getDateTime()+ " - "+ text +"\n";
+		setLog(log);
+		
+		return this.log;
+	}
+
+	public void setLog(String log) {	
+		
+		this.log = log;
+	}
+	public String getLog() {			
+		return this.log;
+	}
+	private String getDateTime() {		
+		// Get the current date and time
+        LocalDateTime currentDateTime = LocalDateTime.now();
+
+        // Format the date and time (optional)
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        String formattedDateTime = currentDateTime.format(formatter);
+        return formattedDateTime;
+	}
+
+	public int getProcessProgress() {
+		return processProgress;
+	}
+
+	public void setProcessProgress(int processProgress) {
+		this.processProgress = processProgress;
+	}
+
+	
+	public String getProjectName() {
+		return projectName;
+	}
+
+	public void setProjectName(String projectName) {
+		this.projectName = projectName;
 	}
 
 }
